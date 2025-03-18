@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>陣地取りサイコロゲーム（コメント付）</title>
+  <style>
+    /* 全体の基本スタイル */
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+    }
+
+    /* 上部情報パネル */
+    #info-panel {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 70vw;
+      max-width: 70vw;
+    }
+
+    /* プレイヤーステータスコンテナ */
+    #status-container {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    /* 各プレイヤーステータスアイテム */
+    .status-item {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    /* ゲームグリッド */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(40px, 1fr));
+      gap: 5px;
+      padding: 5px;
+      width: 70vw;
+      height: 70vw;
+      max-width: 70vh;
+      max-height: 70vh;
+      aspect-ratio: 1;
+    }
+
+    /* 立方体のセル */
+    .hex {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      cursor: pointer;
+      color: #fff;
+      position: relative;
+      user-select: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 -2px 2px rgba(255, 255, 255, 0.2);
+      border: 3px solid;
+      border-bottom: 4px solid rgba(0, 0, 0, 0.3);
+      transform: rotate(0deg);
+      perspective: 1000px;
+      transform-style: preserve-3d;
+      animation: poyopoyo 8s ease-out infinite;
+    }
+
+    @keyframes poyopoyo {
+      0%, 40%, 60%, 80% {
+        transform: rotate(0deg) scale(1.0);
+      }
+      50%, 70% {
+        transform: rotate(0deg) scale(0.95);
+      }
+    }
+
+    /* 各プレイヤーの色 */
+    .player0 { background: #4A90E2; border-color: #003D66; }
+    .player1 { background: #E26A6A; border-color: #A52A2A; }
+    .player2 { background: #58A55C; border-color: #2E5B3A; }
+    .player3 { background: #FFD700; border-color: #B8860B; }
+
+    /* 選択されたセルのスタイル */
+    .selected { outline: 3px solid gold; }
+
+    /* サイコロのスタイル */
+    .cube {
+      width: 16.8px;
+      height: 13.2px;
+      background: #fff;
+      color: #000;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      font-weight: bold;
+    }
+
+    /* ボタンの基本スタイル */
+    button { padding: 5px 10px; }
+
+    /* サイコロ回転アニメーション */
+    @keyframes roll { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    .rolling { animation: roll .6s; }
+
+    /* 下部パネル */
+    #bottom-panel {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 70vw;
+      max-width: 70vw;
+    }
+  </style>
+</head>
+<body>
+
+<div id="info-panel">
+  <div id="turnInfo"></div>
+  <div id="status-container">
+    <div id="player0Status" class="status-item"></div>
+    <div id="player1Status" class="status-item"></div>
+    <div id="player2Status" class="status-item"></div>
+    <div id="player3Status" class="status-item"></div>
+    <button id="newGameBtn">最初から</button>
+  </div>
+</div>
+
+<div id="grid"></div>
+
+<div id="bottom-panel">
+  <button id="endTurnBtn">ターン終了</button>
+  <div id="msg"></div>
+  <label><input type="checkbox" id="spectateCheckbox"> 観戦する</label>
+</div>
+<!------------------------------------------------------------------------------------------------------------------------->
+<!-- 効果音 -->
+<audio id="selectSound" src="https://soundeffect-lab.info/sound/button/mp3/decision7.mp3"></audio>
+<audio id="successSound" src="https://soundeffect-lab.info/sound/battle/mp3/machine-hit1.mp3"></audio>
+<audio id="failSound" src="https://soundeffect-lab.info/sound/battle/mp3/sword-gesture2.mp3"></audio>
+<audio id="turnSound" src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
+<audio id="youwinSound" src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
+<audio id="gameOverSound" src="https://soundeffect-lab.info/sound/anime/mp3/doon1.mp3"></audio>
+<!------------------------------------------------------------------------------------------------------------------------->
+<script>
+// グローバル定数
+const PLAYER_COLORS = ['#4A90E2', '#E26A6A', '#58A55C', '#FFD700']; // 各プレイヤーの色
+const PLAYER_NAMES = ['あなた', 'CPU1', 'CPU2', 'CPU3']; // 各プレイヤーの表示名
+const MAX_DICE = 8; // セルに置ける最大のサイコロ数
+const INITIAL_DICE_MAX = 3; // 初期化時の最大サイコロ数
+const BATTLE_DICE_SIDES = 6; // 戦闘時のサイコロの面数
+const CPU_TURN_DELAY = 800; // CPUのターン処理遅延時間(ms)
+const ROLL_ANIMATION_DURATION = 600; // サイコロ回転アニメーション時間(ms)
+
+// 定数：盤面サイズ（6×6）
+const size = 6;
+
+// 変数定義
+let cells = [];
+let selected = null;
+let turnOrder = [0,1,2,3].sort(()=>Math.random()-.5);
+let turn = 0;
+let gameOver = false;
+let playerActed = false; // プレイヤーが行動したかどうかのフラグ
+
+// -------------------------------------------------------------------------------------------------------------------------
+// 画面処理、サウンド処理
+// -------------------------------------------------------------------------------------------------------------------------
+// 効果音再生
+function play(id){
+  const s=document.getElementById(id);
+  s.currentTime=0;
+  s.play();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// サイコロを表示する関数
+function createDice(el,n){
+  el.innerHTML='';
+  for(let i=0;i<n;i++){
+    const cube=document.createElement('div');
+    cube.className='cube';
+    cube.style.bottom=`${3+i*3}px`;
+    cube.textContent=i+1;
+    el.appendChild(cube);
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// サイコロ転がりアニメーション
+function diceRollAnim(cell){
+  cell.el.classList.add('rolling');
+  setTimeout(()=>cell.el.classList.remove('rolling'),ROLL_ANIMATION_DURATION);
+}
+
+// -------------------------------------------------------------------------------------------------------------------------
+// ボタン処理
+// -------------------------------------------------------------------------------------------------------------------------
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// プレイヤーのターン終了ボタン処理
+document.getElementById('endTurnBtn').onclick=()=>{
+  addDiceToPlayer(0);turn++;updateTurn();
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// やり直しボタン
+document.getElementById('newGameBtn').onclick = () => {
+    init();
+};
+
+// -------------------------------------------------------------------------------------------------------------------------
+// ゲームロジック
+// -------------------------------------------------------------------------------------------------------------------------
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 隣接セル判定関数
+function isAdj(a,b){
+  return Math.abs(a%size-b%size)+(Math.abs(Math.floor(a/size)-Math.floor(b/size)))===1;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 各プレイヤーの最大隣接陣地数を計算
+function calculateMaxAdjacentTerritories() {
+  const status = {
+    0: { max: 0, color: '#4A90E2' },
+    1: { max: 0, color: '#E26A6A' },
+    2: { max: 0, color: '#58A55C' },
+    3: { max: 0, color: '#FFD700' }
+  };
+
+  for (let p = 0; p < 4; p++) {
+    const visited = new Set();
+    cells.filter(c => c.owner === p).forEach(c => {
+      if (!visited.has(c.idx)) {
+        const count = dfs(c.idx, p, visited);
+        status[p].max = Math.max(status[p].max, count);
+      }
+    });
+  }
+  // ステータス表示を更新
+  for (let p = 0; p < 4; p++) {
+    const el = document.getElementById(`player${p}Status`);
+    el.innerHTML = `<span style="color:${status[p].color}">${["あなた","CPU1","CPU2","CPU3"][p]}</span> : ${status[p].max}`;
+    el.style.backgroundColor = status[p].color + '20';
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ゲーム初期化関数
+function init(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML = '';
+  cells = [];
+  selected = null;
+  turnOrder = [0,1,2,3].sort(()=>Math.random()-.5);
+  turn = 0;
+  gameOver = false;
+  playerActed = false;
+  document.getElementById('msg').textContent = ''; // メッセージをクリア
+
+  for(let i=0;i<size*size;i++){
+    const owner=Math.floor(Math.random()*4);
+    const dice=Math.ceil(Math.random()*3);
+    const hex=document.createElement('div');
+    hex.className=`hex player${owner}`;
+    hex.onclick=()=>clickCell(i);
+    createDice(hex,dice);
+    grid.appendChild(hex);
+    cells.push({el:hex,owner,dice,idx:i});
+  }
+  calculateMaxAdjacentTerritories();
+  play('turnSound');
+  updateTurn();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// プレイヤーのクリック操作
+function clickCell(i){
+  if(turnOrder[turn%4]!=0||gameOver)return;
+  const c=cells[i];
+  if(!selected){
+    if(c.owner==0&&c.dice>1){
+      selected=c;c.el.classList.add('selected');play('selectSound');
+    }
+  }else{
+    if(c.owner!=0&&isAdj(selected.idx,i)){
+      battle(selected,c);
+      playerActed = true; // プレイヤーが行動した
+      // 観戦モードが有効ならCPUのターンを実行
+    }
+    selected.el.classList.remove('selected');selected=null;play('selectSound');
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 戦闘処理関数（攻撃側セル、防御側セル）
+function battle(atk,def){
+  diceRollAnim(atk);diceRollAnim(def);
+  isMe = false ;
+  if (turnOrder[turn % 4] === 0) thisisMe = true ;
+
+  setTimeout(()=>{
+    let atkVal=atk.dice*Math.ceil(Math.random()*6);
+    let defVal=def.dice*Math.ceil(Math.random()*6);
+    const atkHandy=1 ; // 攻撃値のハンディー調整
+    // 下部パネルに攻撃値と防御値を表示（人間プレイヤーのときだけ）
+    if (turnOrder[turn % 4] === 0) {
+      document.getElementById('msg').textContent = `攻撃値: ${atkVal} vs 防御値: ${defVal}`;
+    }
+      
+    if(atkVal>defVal){
+      def.owner=atk.owner;
+      def.dice=Math.max(atk.dice-1,1);
+      atk.dice=1;
+      def.el.className=`hex player${atk.owner}`;
+      play('successSound');
+    }else{
+      atk.dice=Math.max(atk.dice-1,1);
+      play('failSound');
+    }
+    createDice(atk.el,atk.dice);
+    createDice(def.el,def.dice);
+    calculateMaxAdjacentTerritories();
+    checkGameOver();
+  },600);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// CPUのターン処理関数（積極攻撃ロジック）
+function cpuTurn(p){
+  const own=cells.filter(c=>c.owner==p&&c.dice>1);
+  let acted=false;
+  for(const c of own){
+    const targets = cells.filter(t => t.owner != p && isAdj(c.idx, t.idx) && c.dice >= t.dice);
+    for (const tgt of targets) {
+      battle(c, tgt);
+      acted = true;
+      play('turnSound');
+    }
+  }
+  setTimeout(()=>{addDiceToPlayer(p);turn++;updateTurn();},800);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ターン進行管理関数
+function updateTurn(){
+  // ゲームが終了している場合は何もしない
+  if(gameOver)return;
+  
+  // 現在のプレイヤーを取得
+  const p=turnOrder[turn%4];
+  
+  // ターン情報を表示
+  document.getElementById('turnInfo').textContent=`ターン：${["あなた","CPU1","CPU2","CPU3"][p]}`;
+  
+  // 現在のプレイヤーが人間でない場合、終了ボタンを無効化
+  document.getElementById('endTurnBtn').disabled=p!=0;
+  
+  // 現在のプレイヤーが人間の場合
+  if(p==0){
+    // ターン開始音を再生
+    play('turnSound');
+    if(document.getElementById('spectateCheckbox').checked) {
+        cpuTurn(turnOrder[(turn + 1) % 4]);
+      }
+    // 人間プレイヤーが所有するセルがない場合
+    if(cells.filter(c=>c.owner==0).length==0){
+      // 終了ボタンを無効化し、サイコロを追加して次のターンへ
+      document.getElementById('endTurnBtn').disabled=true;
+      addDiceToPlayer(0);
+      turn++;
+      updateTurn();
+    }
+  }
+  // 現在のプレイヤーがCPUの場合
+  else {
+    // CPUターン開始音を再生
+    play('turnSound');
+    
+    // 800ms後にCPUのターン処理を実行
+    setTimeout(()=>cpuTurn(p),800);
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// サイコロ追加処理関数（ターン終了時全プレイヤー共通）
+function dfs(i,p,visited){
+  visited.add(i);
+  return 1+cells.filter(c=>c.owner==p&&!visited.has(c.idx)&&isAdj(c.idx,i)).reduce((a,c)=>a+dfs(c.idx,p,visited),0);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ターン終了時のサイコロ追加
+function addDiceToPlayer(p){
+  // 訪問済みセルを記録するためのSetと最大連結数を保持する変数を初期化
+  const visited=new Set();
+  let max=0;
+  
+  // プレイヤーが所有する全セルに対して、最大の連結領域のサイズを計算
+  cells.filter(c=>c.owner==p).forEach(c=>{
+    if(!visited.has(c.idx)){
+      max=Math.max(max,dfs(c.idx,p,visited));
+    }
+  });
+  
+  // プレイヤーが所有する全セルを取得
+  const my=cells.filter(c=>c.owner==p);
+  
+  // 最大連結数分のサイコロをランダムに追加
+  for(let i=0;i<max;i++){
+    // ランダムにターゲットセルを選択
+    const tgt=my[Math.floor(Math.random()*my.length)];
+    // サイコロを追加（最大8個まで）
+    tgt.dice=Math.min(tgt.dice+1,8);
+    // サイコロの表示を更新
+    createDice(tgt.el,tgt.dice);
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ゲーム終了判定関数
+function checkGameOver(){
+  const owners=cells.map(c=>c.owner);
+  if(owners.every(o=>o==owners[0])){
+    gameOver=true;
+    document.getElementById('msg').textContent=`ゲーム終了！${["あなた","CPU1","CPU2","CPU3"][owners[0]]}が陣地統一しました！`;
+    document.getElementById('endTurnBtn').disabled=true;
+    if(owners[0] != 0){
+      play('youwinSound');
+    } else {
+      play('gameOverSound'); // Add game over sound effect
+    }
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 初期化呼び出し
+init();
+// -------------------------------------------------------------------------------------------------------------------------
+</script>
+</body>
+</html>
