@@ -1,2 +1,2 @@
 # ienaridice
-dicegame
+Dicegame
