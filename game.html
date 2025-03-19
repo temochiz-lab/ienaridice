@@ -447,9 +447,9 @@ function checkGameOver(){
     document.getElementById('msg').textContent=`ゲーム終了！${["あなた","CPU1","CPU2","CPU3"][owners[0]]}が陣地統一しました！`;
     document.getElementById('endTurnBtn').disabled=true;
     if(owners[0] != 0){
-      play('youwinSound');
+      play('gameOverSound');
     } else {
-      play('gameOverSound'); // Add game over sound effect
+      play('youwinSound'); // Add game over sound effect
     }
   }
 }
