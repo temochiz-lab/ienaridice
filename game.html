@@ -92,6 +92,8 @@
     .player1 { background: #E26A6A; border-color: #A52A2A; }
     .player2 { background: #58A55C; border-color: #2E5B3A; }
     .player3 { background: #FFD700; border-color: #B8860B; }
+    .player4 { background: #8A2BE2; border-color: #4B0082; }
+    .player5 { background: #FF7F50; border-color: #FF4500; }
 
     /* 選択されたセルのスタイル */
     .selected { outline: 3px solid gold; }
@@ -142,6 +144,8 @@
     <div id="player1Status" class="status-item"></div>
     <div id="player2Status" class="status-item"></div>
     <div id="player3Status" class="status-item"></div>
+    <div id="player4Status" class="status-item"></div>
+    <div id="player5Status" class="status-item"></div>
     <button id="newGameBtn">最初から</button>
   </div>
 </div>
@@ -164,24 +168,23 @@
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
 // グローバル定数
-const PLAYER_COLORS = ['#4A90E2', '#E26A6A', '#58A55C', '#FFD700']; // 各プレイヤーの色
-const PLAYER_NAMES = ['あなた', 'CPU1', 'CPU2', 'CPU3']; // 各プレイヤーの表示名
-const MAX_DICE = 8; // セルに置ける最大のサイコロ数
-const INITIAL_DICE_MAX = 3; // 初期化時の最大サイコロ数
-const BATTLE_DICE_SIDES = 6; // 戦闘時のサイコロの面数
-const CPU_TURN_DELAY = 800; // CPUのターン処理遅延時間(ms)
-const ROLL_ANIMATION_DURATION = 600; // サイコロ回転アニメーション時間(ms)
-
-// 定数：盤面サイズ（6×6）
-const size = 6;
-
-// 変数定義
-let cells = [];
-let selected = null;
-let turnOrder = [0,1,2,3].sort(()=>Math.random()-.5);
-let turn = 0;
-let gameOver = false;
-let playerActed = false; // プレイヤーが行動したかどうかのフラグ
+const PLAYER_COLORS         = ['#4A90E2', '#E26A6A', '#58A55C', '#FFD700', '#8A2BE2', '#FF7F50']; // 各プレイヤーの色
+const PLAYER_NAMES          = ['あなた', 'CPU1', 'CPU2', 'CPU3', 'CPU4', 'CPU5'];                // 各プレイヤーの表示名
+const MAX_DICE              = 8;                                                                // セルに置ける最大のサイコロ数
+const INITIAL_DICE_MAX      = 3;                                                                // 初期化時の最大サイコロ数
+const BATTLE_DICE_SIDES     = 6;                                                                // 戦闘時のサイコロの面数
+const CPU_TURN_DELAY        = 600;                                                              // CPUのターン処理遅延時間(ms)
+const ROLL_ANIMATION_DURATION = 500;                                                            // サイコロ回転アニメーション時間(ms)
+const NUM_PLAYERS           = 6;                                                                // プレイヤー数
+const ATTACK_HANDY          = 0 ;                                                              // 攻撃値の自分用ハンディー
+const size                  = 6;                                                                // 定数：盤面サイズ（6×6）
+// グローバル変数
+let CurrentPlayer           = 0;                                                                // 現在のプレイヤー。　0は人間
+let cells                   = [];
+let selected                = null;
+let turnOrder               = Array.from({length: NUM_PLAYERS}, (_, i) => i).sort(()=>Math.random()-.5);
+let turn                    = 0;
+let gameOver                = false;
 
 // -------------------------------------------------------------------------------------------------------------------------
 // 画面処理、サウンド処理
@@ -246,22 +249,43 @@ function calculateMaxAdjacentTerritories() {
     0: { max: 0, color: '#4A90E2' },
     1: { max: 0, color: '#E26A6A' },
     2: { max: 0, color: '#58A55C' },
-    3: { max: 0, color: '#FFD700' }
+    3: { max: 0, color: '#FFD700' },
+    4: { max: 0, color: '#8A2BE2' },
+    5: { max: 0, color: '#FF7F50' }
   };
 
-  for (let p = 0; p < 4; p++) {
+  for (let p = 0; p < NUM_PLAYERS; p++) {
+    const playerCells = cells.filter(c => c.owner === p);
     const visited = new Set();
-    cells.filter(c => c.owner === p).forEach(c => {
-      if (!visited.has(c.idx)) {
-        const count = dfs(c.idx, p, visited);
+    
+    for (const cell of playerCells) {
+      if (!visited.has(cell.idx)) {
+        const queue = [cell.idx];
+        let count = 0;
+        
+        while (queue.length > 0) {
+          const currentIdx = queue.shift();
+          if (!visited.has(currentIdx)) {
+            visited.add(currentIdx);
+            count++;
+            
+            // 隣接する同プレイヤーのセルを探索
+            for (const neighbor of cells) {
+              if (neighbor.owner === p && isAdj(currentIdx, neighbor.idx) && !visited.has(neighbor.idx)) {
+                queue.push(neighbor.idx);
+              }
+            }
+          }
+        }
+        
         status[p].max = Math.max(status[p].max, count);
       }
-    });
+    }
   }
-  // ステータス表示を更新
-  for (let p = 0; p < 4; p++) {
+  // 最大隣接陣地数表示を更新(上部パネル)
+  for (let p = 0; p < NUM_PLAYERS ; p++) {
     const el = document.getElementById(`player${p}Status`);
-    el.innerHTML = `<span style="color:${status[p].color}">${["あなた","CPU1","CPU2","CPU3"][p]}</span> : ${status[p].max}`;
+    el.innerHTML = `<span style="color:${status[p].color}">${PLAYER_NAMES[p]}</span> : ${status[p].max}`;
     el.style.backgroundColor = status[p].color + '20';
   }
 }
@@ -273,15 +297,15 @@ function init(){
   grid.innerHTML = '';
   cells = [];
   selected = null;
-  turnOrder = [0,1,2,3].sort(()=>Math.random()-.5);
+  // プレイヤーのターン順序をランダムに決定
+  turnOrder = Array.from({length: NUM_PLAYERS}, (_, i) => i).sort(() => Math.random() - .5);
   turn = 0;
   gameOver = false;
-  playerActed = false;
   document.getElementById('msg').textContent = ''; // メッセージをクリア
 
   for(let i=0;i<size*size;i++){
-    const owner=Math.floor(Math.random()*4);
-    const dice=Math.ceil(Math.random()*3);
+    const owner=Math.floor(Math.random()*NUM_PLAYERS);
+    const dice = INITIAL_DICE_MAX;
     const hex=document.createElement('div');
     hex.className=`hex player${owner}`;
     hex.onclick=()=>clickCell(i);
@@ -290,14 +314,14 @@ function init(){
     cells.push({el:hex,owner,dice,idx:i});
   }
   calculateMaxAdjacentTerritories();
-  play('turnSound');
   updateTurn();
+  play('turnSound');
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // プレイヤーのクリック操作
 function clickCell(i){
-  if(turnOrder[turn%4]!=0||gameOver)return;
+  if(turnOrder[turn%NUM_PLAYERS]!=0||gameOver)return;
   const c=cells[i];
   if(!selected){
     if(c.owner==0&&c.dice>1){
@@ -306,7 +330,6 @@ function clickCell(i){
   }else{
     if(c.owner!=0&&isAdj(selected.idx,i)){
       battle(selected,c);
-      playerActed = true; // プレイヤーが行動した
       // 観戦モードが有効ならCPUのターンを実行
     }
     selected.el.classList.remove('selected');selected=null;play('selectSound');
@@ -317,13 +340,14 @@ function clickCell(i){
 // 戦闘処理関数（攻撃側セル、防御側セル）
 function battle(atk,def){
   diceRollAnim(atk);diceRollAnim(def);
-  isMe = false ;
-  if (turnOrder[turn % 4] === 0) thisisMe = true ;
+
+
 
   setTimeout(()=>{
     let atkVal=atk.dice*Math.ceil(Math.random()*6);
+    if (CurrentPlayer == 0) atkVal = atkVal + ATTACK_HANDY ; // 攻撃値の自分用ハンディー
+
     let defVal=def.dice*Math.ceil(Math.random()*6);
-    const atkHandy=1 ; // 攻撃値のハンディー調整
     // 下部パネルに攻撃値と防御値を表示（人間プレイヤーのときだけ）
     if (turnOrder[turn % 4] === 0) {
       document.getElementById('msg').textContent = `攻撃値: ${atkVal} vs 防御値: ${defVal}`;
@@ -343,7 +367,7 @@ function battle(atk,def){
     createDice(def.el,def.dice);
     calculateMaxAdjacentTerritories();
     checkGameOver();
-  },600);
+  },ROLL_ANIMATION_DURATION);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -359,26 +383,33 @@ function cpuTurn(p){
       play('turnSound');
     }
   }
-  setTimeout(()=>{addDiceToPlayer(p);turn++;updateTurn();},800);
+  const hasTerritory = cells.some(c => c.owner == p);
+  if (hasTerritory) {
+    setTimeout(()=>{addDiceToPlayer(p);turn++;updateTurn();},CPU_TURN_DELAY);
+  } else {
+    addDiceToPlayer(p);turn++;updateTurn();
+  }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ターン進行管理関数
+// ターン進行管理関数(メイン)
 function updateTurn(){
   // ゲームが終了している場合は何もしない
   if(gameOver)return;
   
   // 現在のプレイヤーを取得
-  const p=turnOrder[turn%4];
+  CurrentPlayer=turnOrder[turn%NUM_PLAYERS];
   
   // ターン情報を表示
-  document.getElementById('turnInfo').textContent=`ターン：${["あなた","CPU1","CPU2","CPU3"][p]}`;
+  document.getElementById('turnInfo').textContent=`ターン：${["あなた","CPU1","CPU2","CPU3","CPU4","CPU5"][CurrentPlayer]}`;
+  document.querySelectorAll('.status-item').forEach(el => el.style.border = 'none');
+  document.getElementById(`player${CurrentPlayer}Status`).style.border = '5px solid gold';
   
   // 現在のプレイヤーが人間でない場合、終了ボタンを無効化
-  document.getElementById('endTurnBtn').disabled=p!=0;
+  document.getElementById('endTurnBtn').disabled=CurrentPlayer!=0;
   
   // 現在のプレイヤーが人間の場合
-  if(p==0){
+  if(CurrentPlayer==0){
     // ターン開始音を再生
     play('turnSound');
     if(document.getElementById('spectateCheckbox').checked) {
@@ -398,8 +429,8 @@ function updateTurn(){
     // CPUターン開始音を再生
     play('turnSound');
     
-    // 800ms後にCPUのターン処理を実行
-    setTimeout(()=>cpuTurn(p),800);
+    // CPU_TURN_DELAY ms後にCPUのターン処理を実行
+    setTimeout(()=>cpuTurn(CurrentPlayer),CPU_TURN_DELAY);
   }
 }
 
@@ -423,16 +454,14 @@ function addDiceToPlayer(p){
       max=Math.max(max,dfs(c.idx,p,visited));
     }
   });
-  
   // プレイヤーが所有する全セルを取得
   const my=cells.filter(c=>c.owner==p);
-  
   // 最大連結数分のサイコロをランダムに追加
   for(let i=0;i<max;i++){
     // ランダムにターゲットセルを選択
     const tgt=my[Math.floor(Math.random()*my.length)];
-    // サイコロを追加（最大8個まで）
-    tgt.dice=Math.min(tgt.dice+1,8);
+    // サイコロを追加
+    tgt.dice=Math.min(tgt.dice+1,MAX_DICE);
     // サイコロの表示を更新
     createDice(tgt.el,tgt.dice);
   }
