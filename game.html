@@ -15,7 +15,8 @@
       justify-content: center;
       background: #f0f0f0;
     }
-
+    /* ボタンの基本スタイル */
+    button { padding: 5px 10px; }
     /* 上部情報パネル */
     #info-panel {
       background: #f5f5f5;
@@ -23,28 +24,27 @@
       border-radius: 8px;
       margin: 15px 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between; /* 左右に要素を配置 */
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       width: 70vw;
       max-width: 70vw;
+      gap: 20px; /* 要素間の間隔を追加 */
     }
-
     /* プレイヤーステータスコンテナ */
     #status-container {
       display: flex;
       gap: 15px;
       align-items: center;
+      flex-wrap: wrap; /* 折り返しを許可 */
     }
-
     /* 各プレイヤーステータスアイテム */
     .status-item {
       padding: 5px 10px;
       border-radius: 4px;
       font-size: 14px;
     }
-
-    /* ゲームグリッド */
+    /* 盤面 */
     #grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(40px, 1fr));
@@ -56,8 +56,7 @@
       max-height: 70vh;
       aspect-ratio: 1;
     }
-
-    /* 立方体のセル */
+    /* 盤上のセル */
     .hex {
       width: 100%;
       height: 100%;
@@ -77,7 +76,6 @@
       transform-style: preserve-3d;
       animation: poyopoyo 8s ease-out infinite;
     }
-
     @keyframes poyopoyo {
       0%, 40%, 60%, 80% {
         transform: rotate(0deg) scale(1.0);
@@ -86,7 +84,6 @@
         transform: rotate(0deg) scale(0.95);
       }
     }
-
     /* 各プレイヤーの色 */
     .player0 { background: #4A90E2; border-color: #003D66; }
     .player1 { background: #E26A6A; border-color: #A52A2A; }
@@ -94,7 +91,6 @@
     .player3 { background: #FFD700; border-color: #B8860B; }
     .player4 { background: #8A2BE2; border-color: #4B0082; }
     .player5 { background: #FF7F50; border-color: #FF4500; }
-
     /* 選択されたセルのスタイル */
     .selected { outline: 3px solid gold; }
 
@@ -102,7 +98,7 @@
     .cube {
       width: 16.8px;
       height: 13.2px;
-      background: #fff;
+      background: #ffffff;
       color: #000;
       border-radius: 4px;
       display: flex;
@@ -112,10 +108,6 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.4);
       font-weight: bold;
     }
-
-    /* ボタンの基本スタイル */
-    button { padding: 5px 10px; }
-
     /* サイコロ回転アニメーション */
     @keyframes roll { from { transform: rotate(0); } to { transform: rotate(360deg); } }
     .rolling { animation: roll .6s; }
@@ -138,16 +130,18 @@
 <body>
 
 <div id="info-panel">
-  <div id="turnInfo"></div>
-  <div id="status-container">
-    <div id="player0Status" class="status-item"></div>
-    <div id="player1Status" class="status-item"></div>
-    <div id="player2Status" class="status-item"></div>
-    <div id="player3Status" class="status-item"></div>
-    <div id="player4Status" class="status-item"></div>
-    <div id="player5Status" class="status-item"></div>
-    <button id="newGameBtn">最初から</button>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div id="turnInfo"></div>
+    <div id="status-container">
+      <div id="player0Status" class="status-item"></div>
+      <div id="player1Status" class="status-item"></div>
+      <div id="player2Status" class="status-item"></div>
+      <div id="player3Status" class="status-item"></div>
+      <div id="player4Status" class="status-item"></div>
+      <div id="player5Status" class="status-item"></div>
+    </div>
   </div>
+  <button id="newGameBtn">最初から</button>
 </div>
 
 <div id="grid"></div>
@@ -168,8 +162,17 @@
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
 // グローバル定数
-const PLAYER_COLORS         = ['#4A90E2', '#E26A6A', '#58A55C', '#FFD700', '#8A2BE2', '#FF7F50']; // 各プレイヤーの色
-const PLAYER_NAMES          = ['あなた', 'CPU1', 'CPU2', 'CPU3', 'CPU4', 'CPU5'];                // 各プレイヤーの表示名
+  // 各プレイヤーの最大隣接陣地数と色を保持するオブジェクト
+  // キーはプレイヤー番号(0-5)、値は{max: 最大隣接数, color: プレイヤー色}のオブジェクト
+  const PLAYER_STATUS = {
+    0: { name:"あなた", max: 0, color: '#4A90E2' }, // プレイヤー0: 青色
+    1: { name:"CPU1",  max: 0, color: '#E26A6A' }, // プレイヤー1: 赤色
+    2: { name:"CPU2",  max: 0, color: '#58A55C' }, // プレイヤー2: 緑色
+    3: { name:"CPU3",  max: 0, color: '#FFD700' }, // プレイヤー3: 金色
+    4: { name:"CPU4",  max: 0, color: '#8A2BE2' }, // プレイヤー4: 青紫色
+    5: { name:"CPU5",  max: 0, color: '#FF7F50' }  // プレイヤー5: コーラル色
+  };
+
 const MAX_DICE              = 8;                                                                // セルに置ける最大のサイコロ数
 const INITIAL_DICE_MAX      = 3;                                                                // 初期化時の最大サイコロ数
 const BATTLE_DICE_SIDES     = 6;                                                                // 戦闘時のサイコロの面数
@@ -233,65 +236,12 @@ document.getElementById('newGameBtn').onclick = () => {
 };
 
 // -------------------------------------------------------------------------------------------------------------------------
-// ゲームロジック
+// ゲームロジックmain
 // -------------------------------------------------------------------------------------------------------------------------
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// 隣接セル判定関数
-function isAdj(a,b){
-  return Math.abs(a%size-b%size)+(Math.abs(Math.floor(a/size)-Math.floor(b/size)))===1;
-}
-
+// 初期化
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// 各プレイヤーの最大隣接陣地数を計算
-function calculateMaxAdjacentTerritories() {
-  const status = {
-    0: { max: 0, color: '#4A90E2' },
-    1: { max: 0, color: '#E26A6A' },
-    2: { max: 0, color: '#58A55C' },
-    3: { max: 0, color: '#FFD700' },
-    4: { max: 0, color: '#8A2BE2' },
-    5: { max: 0, color: '#FF7F50' }
-  };
-
-  for (let p = 0; p < NUM_PLAYERS; p++) {
-    const playerCells = cells.filter(c => c.owner === p);
-    const visited = new Set();
-    
-    for (const cell of playerCells) {
-      if (!visited.has(cell.idx)) {
-        const queue = [cell.idx];
-        let count = 0;
-        
-        while (queue.length > 0) {
-          const currentIdx = queue.shift();
-          if (!visited.has(currentIdx)) {
-            visited.add(currentIdx);
-            count++;
-            
-            // 隣接する同プレイヤーのセルを探索
-            for (const neighbor of cells) {
-              if (neighbor.owner === p && isAdj(currentIdx, neighbor.idx) && !visited.has(neighbor.idx)) {
-                queue.push(neighbor.idx);
-              }
-            }
-          }
-        }
-        
-        status[p].max = Math.max(status[p].max, count);
-      }
-    }
-  }
-  // 最大隣接陣地数表示を更新(上部パネル)
-  for (let p = 0; p < NUM_PLAYERS ; p++) {
-    const el = document.getElementById(`player${p}Status`);
-    el.innerHTML = `<span style="color:${status[p].color}">${PLAYER_NAMES[p]}</span> : ${status[p].max}`;
-    el.style.backgroundColor = status[p].color + '20';
-  }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ゲーム初期化関数
 function init(){
   const grid=document.getElementById('grid');
   grid.innerHTML = '';
@@ -305,7 +255,7 @@ function init(){
 
   for(let i=0;i<size*size;i++){
     const owner=Math.floor(Math.random()*NUM_PLAYERS);
-    const dice = INITIAL_DICE_MAX;
+    const dice = Math.floor(Math.random() * INITIAL_DICE_MAX) + 1;
     const hex=document.createElement('div');
     hex.className=`hex player${owner}`;
     hex.onclick=()=>clickCell(i);
@@ -319,80 +269,8 @@ function init(){
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// プレイヤーのクリック操作
-function clickCell(i){
-  if(turnOrder[turn%NUM_PLAYERS]!=0||gameOver)return;
-  const c=cells[i];
-  if(!selected){
-    if(c.owner==0&&c.dice>1){
-      selected=c;c.el.classList.add('selected');play('selectSound');
-    }
-  }else{
-    if(c.owner!=0&&isAdj(selected.idx,i)){
-      battle(selected,c);
-      // 観戦モードが有効ならCPUのターンを実行
-    }
-    selected.el.classList.remove('selected');selected=null;play('selectSound');
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// 戦闘処理関数（攻撃側セル、防御側セル）
-function battle(atk,def){
-  diceRollAnim(atk);diceRollAnim(def);
-
-
-
-  setTimeout(()=>{
-    let atkVal=atk.dice*Math.ceil(Math.random()*6);
-    if (CurrentPlayer == 0) atkVal = atkVal + ATTACK_HANDY ; // 攻撃値の自分用ハンディー
-
-    let defVal=def.dice*Math.ceil(Math.random()*6);
-    // 下部パネルに攻撃値と防御値を表示（人間プレイヤーのときだけ）
-    if (turnOrder[turn % 4] === 0) {
-      document.getElementById('msg').textContent = `攻撃値: ${atkVal} vs 防御値: ${defVal}`;
-    }
-      
-    if(atkVal>defVal){
-      def.owner=atk.owner;
-      def.dice=Math.max(atk.dice-1,1);
-      atk.dice=1;
-      def.el.className=`hex player${atk.owner}`;
-      play('successSound');
-    }else{
-      atk.dice=Math.max(atk.dice-1,1);
-      play('failSound');
-    }
-    createDice(atk.el,atk.dice);
-    createDice(def.el,def.dice);
-    calculateMaxAdjacentTerritories();
-    checkGameOver();
-  },ROLL_ANIMATION_DURATION);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// CPUのターン処理関数（積極攻撃ロジック）
-function cpuTurn(p){
-  const own=cells.filter(c=>c.owner==p&&c.dice>1);
-  let acted=false;
-  for(const c of own){
-    const targets = cells.filter(t => t.owner != p && isAdj(c.idx, t.idx) && c.dice >= t.dice);
-    for (const tgt of targets) {
-      battle(c, tgt);
-      acted = true;
-      play('turnSound');
-    }
-  }
-  const hasTerritory = cells.some(c => c.owner == p);
-  if (hasTerritory) {
-    setTimeout(()=>{addDiceToPlayer(p);turn++;updateTurn();},CPU_TURN_DELAY);
-  } else {
-    addDiceToPlayer(p);turn++;updateTurn();
-  }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ターン進行管理関数(メイン)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function updateTurn(){
   // ゲームが終了している場合は何もしない
   if(gameOver)return;
@@ -401,7 +279,7 @@ function updateTurn(){
   CurrentPlayer=turnOrder[turn%NUM_PLAYERS];
   
   // ターン情報を表示
-  document.getElementById('turnInfo').textContent=`ターン：${["あなた","CPU1","CPU2","CPU3","CPU4","CPU5"][CurrentPlayer]}`;
+  //document.getElementById('turnInfo').textContent=`ターン：${["あなた","CPU1","CPU2","CPU3","CPU4","CPU5"][CurrentPlayer]}`;
   document.querySelectorAll('.status-item').forEach(el => el.style.border = 'none');
   document.getElementById(`player${CurrentPlayer}Status`).style.border = '5px solid gold';
   
@@ -433,6 +311,154 @@ function updateTurn(){
     setTimeout(()=>cpuTurn(CurrentPlayer),CPU_TURN_DELAY);
   }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 終了判定関数
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function checkGameOver(){
+  const owners=cells.map(c=>c.owner);
+  if(owners.every(o=>o==owners[0])){
+    gameOver=true;
+    document.getElementById('msg').textContent=`ゲーム終了！${PLAYER_STATUS[owners[0]].name}が陣地統一しました！`;
+    document.getElementById('endTurnBtn').disabled=true;
+    if(owners[0] != 0){
+      play('gameOverSound');
+    } else {
+      play('youwinSound'); // Add game over sound effect
+    }
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 戦闘処理関数（攻撃側セル、防御側セル）
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function battle(atk,def){
+  diceRollAnim(atk);diceRollAnim(def);
+  setTimeout(()=>{
+    let atkVal=atk.dice*Math.ceil(Math.random()*6);
+    if (CurrentPlayer == 0) atkVal = atkVal + ATTACK_HANDY ; // 攻撃値の自分用ハンディー
+
+    let defVal=def.dice*Math.ceil(Math.random()*6);
+    // 下部パネルに攻撃値と防御値を表示（人間プレイヤーのときだけ）
+    if (CurrentPlayer === 0) {
+      document.getElementById('msg').textContent = `攻撃値: ${atkVal} vs 防御値: ${defVal}`;
+    }
+      
+    if(atkVal>defVal){
+      def.owner=atk.owner;
+      def.dice=Math.max(atk.dice-1,1);
+      atk.dice=1;
+      def.el.className=`hex player${atk.owner}`;
+      play('successSound');
+    }else{
+      atk.dice=Math.max(atk.dice-1,1);
+      play('failSound');
+    }
+    createDice(atk.el,atk.dice);
+    createDice(def.el,def.dice);
+    calculateMaxAdjacentTerritories();
+    checkGameOver();
+  },ROLL_ANIMATION_DURATION);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// プレイヤーのクリック操作
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function clickCell(i){
+  if(turnOrder[turn%NUM_PLAYERS]!=0||gameOver)return;
+  const c=cells[i];
+  if(!selected){
+    if(c.owner==0&&c.dice>1){
+      selected=c;c.el.classList.add('selected');play('selectSound');
+    }
+  }else{
+    if(c.owner!=0&&isAdj(selected.idx,i)){
+      battle(selected,c);
+      // 観戦モードが有効ならCPUのターンを実行
+    }
+    selected.el.classList.remove('selected');selected=null;play('selectSound');
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// CPUのターン処理関数（CPU攻撃ロジック）
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function cpuTurn(CurrentPlayer){
+  const own=cells.filter(c=>c.owner==CurrentPlayer&&c.dice>1);
+  let acted=false;
+  for(const c of own){
+    const targets = cells.filter(t => t.owner != CurrentPlayer && isAdj(c.idx, t.idx) && c.dice >= t.dice);
+    for (const tgt of targets) {
+      battle(c, tgt);
+      acted = true;
+      play('turnSound');
+    }
+  }
+  const hasTerritory = cells.some(c => c.owner == CurrentPlayer);
+  if (hasTerritory) {
+    setTimeout(()=>{addDiceToPlayer(CurrentPlayer);turn++;updateTurn();},CPU_TURN_DELAY);
+  } else {
+    addDiceToPlayer(CurrentPlayer);turn++;updateTurn();
+  }
+}
+
+// -------------------------------------------------------------------------------------------------------------------------
+// ゲームロジック補助
+// -------------------------------------------------------------------------------------------------------------------------
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 隣接セル判定関数
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 各プレイヤーの最大隣接陣地数を計算
+function calculateMaxAdjacentTerritories() {
+  for (let CurrentPlayer = 0; CurrentPlayer < NUM_PLAYERS; CurrentPlayer++) {
+    const playerCells = cells.filter(c => c.owner === CurrentPlayer);
+    const visited = new Set();
+    let maxAdjacent = 0;
+
+    for (const cell of playerCells) {
+      if (!visited.has(cell.idx)) {
+        const queue = [cell.idx];
+        let count = 0;
+        
+        while (queue.length > 0) {
+          const currentIdx = queue.shift();
+          if (!visited.has(currentIdx)) {
+            visited.add(currentIdx);
+            count++;
+            
+            // 隣接する同プレイヤーのセルを探索
+            const adjacentCells = cells.filter(neighbor => 
+              neighbor.owner === CurrentPlayer && 
+              isAdj(currentIdx, neighbor.idx) && 
+              !visited.has(neighbor.idx)
+            );
+            queue.push(...adjacentCells.map(c => c.idx));
+          }
+        }
+        maxAdjacent = Math.max(maxAdjacent, count);
+      }
+    }
+    PLAYER_STATUS[CurrentPlayer].max = maxAdjacent;
+  }
+  
+  // 最大隣接陣地数表示を更新(上部パネル)
+  for (let CurrentPlayer = 0; CurrentPlayer < NUM_PLAYERS; CurrentPlayer++) {
+    const el = document.getElementById(`player${CurrentPlayer}Status`);
+    el.innerHTML = `<span style="color:${PLAYER_STATUS[CurrentPlayer].color}">${PLAYER_STATUS[CurrentPlayer].name}</span> : ${PLAYER_STATUS[CurrentPlayer].max}`;
+    el.style.backgroundColor = PLAYER_STATUS[CurrentPlayer].color + '20';
+  }
+}
+
+// 2つのセルが隣接しているかどうかを判定
+// a, b: 比較する2つのセルのインデックス　size: グリッドの1辺のサイズ　戻り値: 隣接していればtrue、そうでなければfalse
+function isAdj(a,b){
+  // 列の差の絶対値と行の差の絶対値の合計が1なら隣接
+  return Math.abs(a%size-b%size)+(Math.abs(Math.floor(a/size)-Math.floor(b/size)))===1;
+}
+
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // サイコロ追加処理関数（ターン終了時全プレイヤー共通）
@@ -467,24 +493,9 @@ function addDiceToPlayer(p){
   }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ゲーム終了判定関数
-function checkGameOver(){
-  const owners=cells.map(c=>c.owner);
-  if(owners.every(o=>o==owners[0])){
-    gameOver=true;
-    document.getElementById('msg').textContent=`ゲーム終了！${["あなた","CPU1","CPU2","CPU3"][owners[0]]}が陣地統一しました！`;
-    document.getElementById('endTurnBtn').disabled=true;
-    if(owners[0] != 0){
-      play('gameOverSound');
-    } else {
-      play('youwinSound'); // Add game over sound effect
-    }
-  }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// 初期化呼び出し
+// -------------------------------------------------------------------------------------------------------------------------
+// 開始！
+// -------------------------------------------------------------------------------------------------------------------------
 init();
 // -------------------------------------------------------------------------------------------------------------------------
 </script>
