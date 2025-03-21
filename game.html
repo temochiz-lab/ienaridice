@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>陣地取りサイコロゲーム（コメント付）</title>
+  <title>Ienari Dice v4</title>
   <style>
     /* 全体の基本スタイル */
     body {
@@ -153,11 +153,11 @@
 </div>
 <!------------------------------------------------------------------------------------------------------------------------->
 <!-- 効果音 -->
-<audio id="selectSound" src="https://soundeffect-lab.info/sound/button/mp3/decision7.mp3"></audio>
-<audio id="successSound" src="https://soundeffect-lab.info/sound/battle/mp3/machine-hit1.mp3"></audio>
-<audio id="failSound" src="https://soundeffect-lab.info/sound/battle/mp3/sword-gesture2.mp3"></audio>
-<audio id="turnSound" src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
-<audio id="youwinSound" src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
+<audio id="selectSound"   src="https://soundeffect-lab.info/sound/button/mp3/decision7.mp3"></audio>
+<audio id="successSound"  src="https://soundeffect-lab.info/sound/battle/mp3/machine-hit1.mp3"></audio>
+<audio id="failSound"     src="https://soundeffect-lab.info/sound/battle/mp3/sword-gesture2.mp3"></audio>
+<audio id="turnSound"     src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
+<audio id="youwinSound"   src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
 <audio id="gameOverSound" src="https://soundeffect-lab.info/sound/anime/mp3/doon1.mp3"></audio>
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
@@ -168,19 +168,25 @@
     0: { name:"あなた", max: 0, color: '#4A90E2' }, // プレイヤー0: 青色
     1: { name:"CPU1",  max: 0, color: '#E26A6A' }, // プレイヤー1: 赤色
     2: { name:"CPU2",  max: 0, color: '#58A55C' }, // プレイヤー2: 緑色
-    3: { name:"CPU3",  max: 0, color: '#FFD700' }, // プレイヤー3: 金色
+    3: { name:"CPU3",  max: 0, color: '#FFD700' }, // プレイヤー 3: 金色
     4: { name:"CPU4",  max: 0, color: '#8A2BE2' }, // プレイヤー4: 青紫色
     5: { name:"CPU5",  max: 0, color: '#FF7F50' }  // プレイヤー5: コーラル色
   };
 
 const MAX_DICE              = 8;                                                                // セルに置ける最大のサイコロ数
-const INITIAL_DICE_MAX      = 3;                                                                // 初期化時の最大サイコロ数
+const INITIAL_DICE_MAX      = 5;                                                                // 初期化時の最大サイコロ数
 const BATTLE_DICE_SIDES     = 6;                                                                // 戦闘時のサイコロの面数
 const CPU_TURN_DELAY        = 600;                                                              // CPUのターン処理遅延時間(ms)
 const ROLL_ANIMATION_DURATION = 500;                                                            // サイコロ回転アニメーション時間(ms)
 const NUM_PLAYERS           = 6;                                                                // プレイヤー数
 const ATTACK_HANDY          = 0 ;                                                              // 攻撃値の自分用ハンディー
-const size                  = 6;                                                                // 定数：盤面サイズ（6×6）
+const SIZEX_MIN          = 2 ;
+const SIZEX_MAX          = 7 ;
+const SIZEY_MIN          = 3 ;
+const SIZEY_MAX          = 8 ;
+
+let sizeX                  = 3;                                                                // 定数：盤面サイズ
+let sizeY                  = 3;                                                                // 定数：盤面サイズ
 // グローバル変数
 let CurrentPlayer           = 0;                                                                // 現在のプレイヤー。　0は人間
 let cells                   = [];
@@ -243,7 +249,12 @@ document.getElementById('newGameBtn').onclick = () => {
 // 初期化
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function init(){
-  const grid=document.getElementById('grid');
+
+sizeX                  = SIZEX_MIN + Math.floor(Math.random() * (SIZEX_MAX - SIZEX_MIN + 1));                                                                // 定数：盤面サイズ
+sizeY                  = sizeX;                                                                // 定数：盤面サイズ
+
+const grid=document.getElementById('grid');
+    grid.style.gridTemplateColumns = `repeat(${sizeX}, minmax(40px, 1fr))`;
   grid.innerHTML = '';
   cells = [];
   selected = null;
@@ -253,7 +264,7 @@ function init(){
   gameOver = false;
   document.getElementById('msg').textContent = ''; // メッセージをクリア
 
-  for(let i=0;i<size*size;i++){
+  for(let i=0;i<sizeX*sizeY;i++){
     const owner=Math.floor(Math.random()*NUM_PLAYERS);
     const dice = Math.floor(Math.random() * INITIAL_DICE_MAX) + 1;
     const hex=document.createElement('div');
@@ -432,6 +443,9 @@ function calculateMaxAdjacentTerritories() {
             // 隣接する同プレイヤーのセルを探索
             const adjacentCells = cells.filter(neighbor => 
               neighbor.owner === CurrentPlayer && 
+              // currentIdx: 現在のセルのインデックス
+              // neighbor.idx: 隣接するセルのインデックス
+              // isAdj関数は、これらのインデックスを使用してセルが隣接しているかどうかを判定します。
               isAdj(currentIdx, neighbor.idx) && 
               !visited.has(neighbor.idx)
             );
@@ -453,10 +467,25 @@ function calculateMaxAdjacentTerritories() {
 }
 
 // 2つのセルが隣接しているかどうかを判定
-// a, b: 比較する2つのセルのインデックス　size: グリッドの1辺のサイズ　戻り値: 隣接していればtrue、そうでなければfalse
-function isAdj(a,b){
-  // 列の差の絶対値と行の差の絶対値の合計が1なら隣接
-  return Math.abs(a%size-b%size)+(Math.abs(Math.floor(a/size)-Math.floor(b/size)))===1;
+// a, b: 比較する2つのセルのインデックス　戻り値: 隣接していればtrue、そうでなければfalse
+function isAdj(a, b) {
+  const aCol = a % sizeX;
+  const aRow = Math.floor(a / sizeX);
+  const bCol = b % sizeX;
+  const bRow = Math.floor(b / sizeX);
+  // Check for adjacency in a grid (up, down, left, right)
+  if (aCol === bCol && Math.abs(aRow - bRow) === 1) {
+    return true; // Vertical adjacency
+  }
+  if (aRow === bRow && Math.abs(aCol - bCol) === 1) {
+    return true; // Horizontal adjacency
+  }
+
+    // 修正: 斜め方向の隣接を考慮しない場合は、ここまでの判定で十分です。
+    // もし斜め方向の隣接を考慮する場合は、以下の条件を追加します。
+    // ただし、このゲームのルールで斜め方向の隣接を認めるかどうかを確認してください。
+
+  return false;
 }
 
 
