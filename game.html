@@ -125,6 +125,25 @@
       width: 70vw;
       max-width: 70vw;
     }
+
+    /* フォーカス時のスタイル（点滅、角丸） */
+    @keyframes blink {
+      0% {
+        outline-color: red;
+      }
+      50% {
+        outline-color: transparent;
+      }
+      100% {
+        outline-color: red;
+      }
+    }
+    .focus-red-border {
+      outline: 5px solid gold;
+      animation: blink 3s linear infinite;
+      border-radius: 8px; /* 角を丸くする */
+    }
+
   </style>
 </head>
 <body>
@@ -141,7 +160,7 @@
       <div id="player5Status" class="status-item"></div>
     </div>
   </div>
-  <button id="newGameBtn">最初から</button>
+  <button id="newGameBtn">次へ</button>
 </div>
 
 <div id="grid"></div>
@@ -287,6 +306,20 @@ document.getElementById('newGameBtn').onclick = () => {
     init();
 };
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 「次へ」ボタンを赤枠でフォーカスする関数
+function focusNewGameButton() {
+  const newGameBtn = document.getElementById('newGameBtn');
+  newGameBtn.classList.add('focus-red-border');
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 「次へ」ボタンのフォーカスを元に戻す関数
+function unfocusNewGameButton() {
+  const newGameBtn = document.getElementById('newGameBtn');
+  newGameBtn.classList.remove('focus-red-border');
+}
+
 // -------------------------------------------------------------------------------------------------------------------------
 // ゲームロジックmain
 // -------------------------------------------------------------------------------------------------------------------------
@@ -299,6 +332,8 @@ function init(){
 sizeX                  = currentLevel ; // 盤面サイズ というか、レベル
 //sizeX                  = SIZEX_MIN + Math.floor(Math.random() * (SIZEX_MAX - SIZEX_MIN + 1));                                                                // 定数：盤面サイズ
 sizeY                  = sizeX;                                                                // 定数：盤面サイズ
+
+unfocusNewGameButton() ;
 // BGMの再生
 stopBGM();
 playBGM(bgmfiles[sizeX-1]) ;
@@ -315,8 +350,16 @@ const grid=document.getElementById('grid');
   gameOver = false;
   document.getElementById('msg').textContent = ''; // メッセージをクリア
 
+  let humanCellAssigned = false; // Flag to track if a cell has been assigned to the human player
+
   for(let i=0;i<sizeX*sizeY;i++){
-    const owner=Math.floor(Math.random()*NUM_PLAYERS);
+    let owner;
+    if (!humanCellAssigned) {
+      owner = 0; // Assign the first cell to the human player
+      humanCellAssigned = true;
+    } else {
+      owner = Math.floor(Math.random() * NUM_PLAYERS);
+    }
     const dice = Math.floor(Math.random() * INITIAL_DICE_MAX) + 1;
     
     const hex=document.createElement('div');
@@ -395,7 +438,7 @@ function checkGameOver(){
     setTimeout(() => {
       playBGM(bgmfiles[9]);
     }, 1500);
-
+    focusNewGameButton() ;
   }
 }
 
@@ -585,6 +628,7 @@ function addDiceToPlayer(p){
 // 開始！
 // -------------------------------------------------------------------------------------------------------------------------
 //init();
+focusNewGameButton() ;
 // -------------------------------------------------------------------------------------------------------------------------
 </script>
 </body>
