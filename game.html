@@ -125,15 +125,6 @@
       width: 70vw;
       max-width: 70vw;
     }
-
-    /* 最初からボタンの初期スタイル */
-    #newGameBtn {
-      border: 2px solid red; /* 初期状態では赤い枠線 */
-    }
-    /* クリック後のスタイル */
-    #newGameBtn.clicked {
-      border: none; /* クリック後は枠線を消す */
-    }
   </style>
 </head>
 <body>
@@ -194,9 +185,13 @@ const SIZEX_MIN          = 2 ;
 const SIZEX_MAX          = 7 ;
 const SIZEY_MIN          = 3 ;
 const SIZEY_MAX          = 8 ;
+const MAXLEVEL           = SIZEX_MAX ;
+const MINLEVEL           = SIZEX_MIN ;
+
+let currentLevel         = 2 ;
 
 let sizeX                  = 3;                                                                // 定数：盤面サイズ
-let sizeY                  = sizeX;                                                                // 定数：盤面サイズ
+let sizeY                  = 3;                                                                // 定数：盤面サイズ
 // グローバル変数
 let CurrentPlayer           = 0;                                                                // 現在のプレイヤー。　0は人間
 let cells                   = [];
@@ -208,6 +203,8 @@ let gameOver                = false;
 // -------------------------------------------------------------------------------------------------------------------------
 // 画面処理、サウンド処理
 // -------------------------------------------------------------------------------------------------------------------------
+
+let bmgaudio ; // BGMの状態保持
 
 const bgmfiles = [
   "https://temochiz-lab.github.io/ienaridice/bgm/01_LT122_BPM79_LONG.mp3",
@@ -230,7 +227,6 @@ function play(id){
   s.play();
 }
 
-let bmgaudio ;
 
 // BGM再生
 function playBGM(url) {
@@ -287,10 +283,8 @@ document.getElementById('endTurnBtn').onclick=()=>{
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // やり直しボタン
-const newGameBtn = document.getElementById('newGameBtn');
-newGameBtn.onclick = () => {
+document.getElementById('newGameBtn').onclick = () => {
     init();
-    newGameBtn.classList.add('clicked'); // クリック後にクラスを追加
 };
 
 // -------------------------------------------------------------------------------------------------------------------------
@@ -302,7 +296,8 @@ newGameBtn.onclick = () => {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function init(){
 
-sizeX                  = SIZEX_MIN + Math.floor(Math.random() * (SIZEX_MAX - SIZEX_MIN + 1));                                                                // 定数：盤面サイズ
+sizeX                  = currentLevel ; // 盤面サイズ というか、レベル
+//sizeX                  = SIZEX_MIN + Math.floor(Math.random() * (SIZEX_MAX - SIZEX_MIN + 1));                                                                // 定数：盤面サイズ
 sizeY                  = sizeX;                                                                // 定数：盤面サイズ
 // BGMの再生
 stopBGM();
@@ -315,13 +310,15 @@ const grid=document.getElementById('grid');
   selected = null;
   // プレイヤーのターン順序をランダムに決定
   turnOrder = Array.from({length: NUM_PLAYERS}, (_, i) => i).sort(() => Math.random() - .5);
-  turn = 0;
+  turn = 0
+  CurrentPlayer = turnOrder[0]; // 初期化: 最初のプレイヤー
   gameOver = false;
   document.getElementById('msg').textContent = ''; // メッセージをクリア
 
   for(let i=0;i<sizeX*sizeY;i++){
     const owner=Math.floor(Math.random()*NUM_PLAYERS);
     const dice = Math.floor(Math.random() * INITIAL_DICE_MAX) + 1;
+    
     const hex=document.createElement('div');
     hex.className=`hex player${owner}`;
     hex.onclick=()=>clickCell(i);
@@ -391,6 +388,8 @@ function checkGameOver(){
       play('gameOverSound');
     } else {
       play('youwinSound'); // Add game over sound effect
+      currentLevel ++ ;
+      if (currentLevel > MAXLEVEL) currentLevel = MINLEVEL ;
     }
     stopBGM();
     setTimeout(() => {
