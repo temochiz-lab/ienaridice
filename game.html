@@ -125,6 +125,15 @@
       width: 70vw;
       max-width: 70vw;
     }
+
+    /* 最初からボタンの初期スタイル */
+    #newGameBtn {
+      border: 2px solid red; /* 初期状態では赤い枠線 */
+    }
+    /* クリック後のスタイル */
+    #newGameBtn.clicked {
+      border: none; /* クリック後は枠線を消す */
+    }
   </style>
 </head>
 <body>
@@ -187,7 +196,7 @@ const SIZEY_MIN          = 3 ;
 const SIZEY_MAX          = 8 ;
 
 let sizeX                  = 3;                                                                // 定数：盤面サイズ
-let sizeY                  = 3;                                                                // 定数：盤面サイズ
+let sizeY                  = sizeX;                                                                // 定数：盤面サイズ
 // グローバル変数
 let CurrentPlayer           = 0;                                                                // 現在のプレイヤー。　0は人間
 let cells                   = [];
@@ -278,8 +287,10 @@ document.getElementById('endTurnBtn').onclick=()=>{
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // やり直しボタン
-document.getElementById('newGameBtn').onclick = () => {
+const newGameBtn = document.getElementById('newGameBtn');
+newGameBtn.onclick = () => {
     init();
+    newGameBtn.classList.add('clicked'); // クリック後にクラスを追加
 };
 
 // -------------------------------------------------------------------------------------------------------------------------
