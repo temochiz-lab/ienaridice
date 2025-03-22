@@ -13,7 +13,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #f0f0f0;
+      background: #c0c0c0;
+/*      background: #f0f0f0; */
     }
     /* ボタンの基本スタイル */
     button { padding: 5px 10px; }
@@ -178,6 +179,7 @@
 <audio id="turnSound"     src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
 <audio id="youwinSound"   src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
 <audio id="gameOverSound" src="https://soundeffect-lab.info/sound/anime/mp3/doon1.mp3"></audio>
+<audio id="myturn" src="https://soundeffect-lab.info/sound/button/mp3/decision22.mp3"></audio>
 
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
@@ -396,8 +398,6 @@ function updateTurn(){
   
   // 現在のプレイヤーが人間の場合
   if(CurrentPlayer==0){
-    // ターン開始音を再生
-    play('turnSound');
     humanPlayerActed = false ;
     if(document.getElementById('spectateCheckbox').checked) {
         cpuTurn(turnOrder[(turn + 1) % 4]);
@@ -409,6 +409,9 @@ function updateTurn(){
       addDiceToPlayer(0);
       turn++;
       updateTurn();
+    }
+    else{
+      play('myturn'); // ターン開始音を再生
     }
   }
   // 現在のプレイヤーがCPUの場合
