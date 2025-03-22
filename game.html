@@ -159,6 +159,7 @@
 <audio id="turnSound"     src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
 <audio id="youwinSound"   src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
 <audio id="gameOverSound" src="https://soundeffect-lab.info/sound/anime/mp3/doon1.mp3"></audio>
+
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
 // グローバル定数
@@ -198,11 +199,51 @@ let gameOver                = false;
 // -------------------------------------------------------------------------------------------------------------------------
 // 画面処理、サウンド処理
 // -------------------------------------------------------------------------------------------------------------------------
+
+const bgmfiles = [
+  "https://temochiz-lab.github.io/ienaridice/bgm/01_LT122_BPM79_LONG.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/02_415_long_BPM120.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/03_277_long_BPM120.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/04_418_long_BPM168.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/05_448_long_BPM108.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/06_251_long_BPM150.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/07_223_long_BPM142.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/08_243_long_BPM181.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/09_246_long_BPM164.mp3",
+  "https://temochiz-lab.github.io/ienaridice/bgm/10_327_long_BPM110.mp3"
+];
+
+
 // 効果音再生
 function play(id){
   const s=document.getElementById(id);
   s.currentTime=0;
   s.play();
+}
+
+let bmgaudio ;
+
+// BGM再生
+function playBGM(url) {
+  if (bmgaudio) {
+    bmgaudio.pause();
+    bmgaudio.currentTime = 0;
+  }
+  bmgaudio = new Audio(url);
+  bmgaudio.volume = 0.3; // 音量を50%に設定
+  bmgaudio.loop = true; // 無限ループを設定
+  bmgaudio.play().catch(error => {
+    console.error("BGMの再生に失敗しました:", error);
+  });
+}
+
+// BGM停止
+function stopBGM() {
+  if (bmgaudio) {
+    bmgaudio.pause();
+    bmgaudio.currentTime = 0;
+    bmgaudio = null;
+  }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -252,6 +293,9 @@ function init(){
 
 sizeX                  = SIZEX_MIN + Math.floor(Math.random() * (SIZEX_MAX - SIZEX_MIN + 1));                                                                // 定数：盤面サイズ
 sizeY                  = sizeX;                                                                // 定数：盤面サイズ
+// BGMの再生
+stopBGM();
+playBGM(bgmfiles[sizeX-1]) ;
 
 const grid=document.getElementById('grid');
     grid.style.gridTemplateColumns = `repeat(${sizeX}, minmax(40px, 1fr))`;
@@ -337,6 +381,11 @@ function checkGameOver(){
     } else {
       play('youwinSound'); // Add game over sound effect
     }
+    stopBGM();
+    setTimeout(() => {
+      playBGM(bgmfiles[9]);
+    }, 1500);
+
   }
 }
 
@@ -525,7 +574,7 @@ function addDiceToPlayer(p){
 // -------------------------------------------------------------------------------------------------------------------------
 // 開始！
 // -------------------------------------------------------------------------------------------------------------------------
-init();
+//init();
 // -------------------------------------------------------------------------------------------------------------------------
 </script>
 </body>
