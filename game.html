@@ -199,7 +199,8 @@ const BATTLE_DICE_SIDES     = 6;                                                
 const CPU_TURN_DELAY        = 600;                                                              // CPUのターン処理遅延時間(ms)
 const ROLL_ANIMATION_DURATION = 500;                                                            // サイコロ回転アニメーション時間(ms)
 const NUM_PLAYERS           = 6;                                                                // プレイヤー数
-const ATTACK_HANDY          = 0 ;                                                              // 攻撃値の自分用ハンディー
+const ATTACK_HANDY          = 5 ;                                                              // 攻撃値の自分用ハンディー
+const DEFENCE_HANDY         = 5 ;                                                              // 人間が防御に徹したときのサイコロ数の倍率
 const SIZEX_MIN          = 2 ;
 const SIZEX_MAX          = 7 ;
 const SIZEY_MIN          = 3 ;
@@ -218,6 +219,7 @@ let selected                = null;
 let turnOrder               = Array.from({length: NUM_PLAYERS}, (_, i) => i).sort(()=>Math.random()-.5);
 let turn                    = 0;
 let gameOver                = false;
+let humanPlayerActed = false; // 人間プレイヤーが行動したかどうかのフラグ
 
 // -------------------------------------------------------------------------------------------------------------------------
 // 画面処理、サウンド処理
@@ -396,6 +398,7 @@ function updateTurn(){
   if(CurrentPlayer==0){
     // ターン開始音を再生
     play('turnSound');
+    humanPlayerActed = false ;
     if(document.getElementById('spectateCheckbox').checked) {
         cpuTurn(turnOrder[(turn + 1) % 4]);
       }
@@ -446,6 +449,7 @@ function checkGameOver(){
 // 戦闘処理関数（攻撃側セル、防御側セル）
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function battle(atk,def){
+  humanPlayerActed = true ;
   diceRollAnim(atk);diceRollAnim(def);
   setTimeout(()=>{
     let atkVal=atk.dice*Math.ceil(Math.random()*6);
@@ -611,6 +615,12 @@ function addDiceToPlayer(p){
       max=Math.max(max,dfs(c.idx,p,visited));
     }
   });
+
+  // 人間プレイヤーが何もしていなかったらmaxを3倍にする
+  if (CurrentPlayer === 0 && !humanPlayerActed) {
+    max *= DEFENCE_HANDY;
+  }
+
   // プレイヤーが所有する全セルを取得
   const my=cells.filter(c=>c.owner==p);
   // 最大連結数分のサイコロをランダムに追加
