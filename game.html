@@ -149,6 +149,12 @@
       border-radius: 8px; /* 角を丸くする */
     }
 
+    .focus-red-border-endturn {
+      outline: 5px solid gold;
+      animation: blink 3s linear infinite;
+      border-radius: 8px; /* 角を丸くする */
+    }
+
   </style>
 </head>
 <body>
@@ -329,6 +335,20 @@ function unfocusNewGameButton() {
   newGameBtn.classList.remove('focus-red-border');
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 「ターン終了」ボタンを赤枠でフォーカスする関数
+function focusEndTurnButton() {
+  const endTurnBtn = document.getElementById('endTurnBtn');
+  endTurnBtn.classList.add('focus-red-border-endturn');
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 「ターン終了」ボタンのフォーカスを元に戻す関数
+function unfocusEndTurnButton() {
+  const endTurnBtn = document.getElementById('endTurnBtn');
+  endTurnBtn.classList.remove('focus-red-border-endturn');
+}
+
 // -------------------------------------------------------------------------------------------------------------------------
 // ゲームロジックmain
 // -------------------------------------------------------------------------------------------------------------------------
@@ -343,6 +363,8 @@ sizeX                  = currentLevel ; // 盤面サイズ というか、レベ
 sizeY                  = sizeX;                                                                // 定数：盤面サイズ
 
 unfocusNewGameButton() ;
+unfocusEndTurnButton() ;
+
 // BGMの再生
 stopBGM();
 playBGM(bgmfiles[sizeX-1]) ;
@@ -400,6 +422,12 @@ function updateTurn(){
   
   // 現在のプレイヤーが人間でない場合、終了ボタンを無効化
   document.getElementById('endTurnBtn').disabled=CurrentPlayer!=0;
+
+  if(CurrentPlayer==0){
+    focusEndTurnButton() ;
+  } else {
+    unfocusEndTurnButton() ;
+  }
   
   // 現在のプレイヤーが人間の場合
   if(CurrentPlayer==0){
@@ -411,6 +439,7 @@ function updateTurn(){
     if(cells.filter(c=>c.owner==0).length==0){
       // 終了ボタンを無効化し、サイコロを追加して次のターンへ
       document.getElementById('endTurnBtn').disabled=true;
+      unfocusEndTurnButton() ;
       addDiceToPlayer(0);
       turn++;
       updateTurn();
@@ -438,6 +467,7 @@ function checkGameOver(){
     gameOver=true;
     document.getElementById('msg').textContent=`ゲーム終了！${PLAYER_STATUS[owners[0]].name}が陣地統一しました！`;
     document.getElementById('endTurnBtn').disabled=true;
+    unfocusEndTurnButton() ;
     if(owners[0] != 0){
       play('gameOverSound');
     } else {
