@@ -6,7 +6,7 @@
   <style>
     /* 全体の基本スタイル */
     body {
-      font-family: sans-serif;
+      font-family: "uzura", sans-serif; /* uzuraフォントを指定 */
       font-size: 24px;
       margin: 0;
       min-height: 100vh;
@@ -15,11 +15,11 @@
       align-items: center;
       justify-content: center;
       background: #c0c0c0;
-/*      background: #f0f0f0; */
     }
     /* ボタンの基本スタイル */
     button { padding: 20px 40px; 
       font-size: 24px;
+      font-family: "uzura", sans-serif; /* uzuraフォントを指定 */
     }
     /* 上部情報パネル */
     #info-panel {
@@ -28,12 +28,17 @@
       border-radius: 8px;
       margin: 15px 0;
       display: flex;
-      justify-content: space-between; /* 左右に要素を配置 */
+      justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       width: 70vw;
       max-width: 70vw;
-      gap: 20px; /* 要素間の間隔を追加 */
+      gap: 20px;
+      font-family: "uzura", sans-serif; /* uzuraフォントを指定 */
+    }
+    @font-face {
+      font-family: "uzura";
+      src: url("https://temochiz-lab.github.io/ienaridice/uzura.ttf") format("truetype");
     }
     /* プレイヤーステータスコンテナ */
     #status-container {
