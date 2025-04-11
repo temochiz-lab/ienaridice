@@ -188,17 +188,20 @@
 </div>
 <!------------------------------------------------------------------------------------------------------------------------->
 <!-- 効果音 -->
-<audio id="selectSound"   src="https://soundeffect-lab.info/sound/button/mp3/decision7.mp3"></audio>
-<audio id="successSound"  src="https://soundeffect-lab.info/sound/battle/mp3/machine-hit1.mp3"></audio>
-<audio id="failSound"     src="https://soundeffect-lab.info/sound/battle/mp3/sword-gesture2.mp3"></audio>
-<audio id="turnSound"     src="https://soundeffect-lab.info/sound/button/mp3/decision9.mp3"></audio>
-<audio id="youwinSound"   src="https://soundeffect-lab.info/sound/anime/mp3/shakin2.mp3"></audio>
-<audio id="gameOverSound" src="https://soundeffect-lab.info/sound/anime/mp3/doon1.mp3"></audio>
-<audio id="myturn" src="https://soundeffect-lab.info/sound/button/mp3/decision22.mp3"></audio>
-<audio id="powerup" src="https://soundeffect-lab.info/sound/battle/mp3/super-arts-motion1.mp3"></audio>
+<audio id="selectSound"   src="./se/decision7.mp3"></audio>
+<audio id="successSound"  src="./se/machine-hit1.mp3"></audio>
+<audio id="failSound"     src="./se/sword-gesture2.mp3"></audio>
+<audio id="turnSound"     src="./se/decision9.mp3"></audio>
+<audio id="youwinSound"   src="./se/shakin2.mp3"></audio>
+<audio id="gameOverSound" src="./se/doon1.mp3"></audio>
+<audio id="myturn"        src="./se/decision22.mp3"></audio>
+<audio id="powerup"       src="./se//super-arts-motion1.mp3"></audio>
+<audio id="powerup"       src="./se/super-arts-motion1.mp3"></audio>
+
 
 <!------------------------------------------------------------------------------------------------------------------------->
 <script>
+//<audio id="powerup" src="https://soundeffect-lab.info/sound/battle/mp3/super-arts-motion1.mp3"></audio>
 // グローバル定数
   // 各プレイヤーの最大隣接陣地数と色を保持するオブジェクト
   // キーはプレイヤー番号(0-5)、値は{max: 最大隣接数, color: プレイヤー色}のオブジェクト
@@ -246,16 +249,16 @@ let humanPlayerActed = false; // 人間プレイヤーが行動したかどう�
 let bmgaudio ; // BGMの状態保持
 
 const bgmfiles = [
-  "https://temochiz-lab.github.io/ienaridice/bgm/01_LT122_BPM79_LONG.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/02_415_long_BPM120.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/03_277_long_BPM120.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/04_418_long_BPM168.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/05_448_long_BPM108.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/06_251_long_BPM150.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/07_223_long_BPM142.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/08_243_long_BPM181.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/09_246_long_BPM164.mp3",
-  "https://temochiz-lab.github.io/ienaridice/bgm/10_327_long_BPM110.mp3"
+  "./bgm/01_LT122_BPM79_LONG.mp3",
+  "./bgm/02_415_long_BPM120.mp3",
+  "./bgm/03_277_long_BPM120.mp3",
+  "./bgm/04_418_long_BPM168.mp3",
+  "./bgm/05_448_long_BPM108.mp3",
+  "./bgm/06_251_long_BPM150.mp3",
+  "./bgm/07_223_long_BPM142.mp3",
+  "./bgm/08_243_long_BPM181.mp3",
+  "./bgm/09_246_long_BPM164.mp3",
+  "./bgm/10_327_long_BPM110.mp3"
 ];
 
 
